@@ -53,7 +53,7 @@
 - FFmpeg
 - 约 20GB 磁盘空间（模型权重 + 代码）
 
-### 📌 RTX 4090 一键部署（国内镜像加速版）
+### 📌 RTX 4090 一键部署
 
 完整复制以下命令即可：
 
@@ -66,23 +66,22 @@ cd digital-human
 conda create -n digital-human python=3.10 -y
 conda activate digital-human
 
-# ========== 3. 安装 PyTorch（国内清华源加速）==========
-pip install torch==2.7.1 torchvision==0.22.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# ========== 3. 安装 PyTorch ==========
+pip install torch==2.7.1 torchvision==0.22.1
 
 # ========== 4. 安装项目依赖 ==========
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r requirements.txt
 
 # ========== 5. 安装 FlashAttention（4090 推理加速必装）==========
 pip install ninja
-pip install flash_attn==2.8.0.post2 --no-build-isolation \
-  -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install flash_attn==2.8.0.post2 --no-build-isolation
 
-# ========== 6. 安装 ModelScope 并下载模型权重 ==========
-pip install modelscope -i https://pypi.tuna.tsinghua.edu.cn/simple
+# ========== 6. 安装 ModelScope & 下载模型权重 ==========
+pip install modelscope
 
-# SoulX-FlashHead 1.3B（含 Lite & Pro，HF 镜像下载）
+# SoulX-FlashHead 1.3B（仅 HF 发布，走 HF 镜像）
 export HF_ENDPOINT=https://hf-mirror.com
-pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install "huggingface_hub[cli]"
 huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
   --local-dir ./models/SoulX-FlashHead-1_3B
 
@@ -97,7 +96,6 @@ modelscope download --model meituan-longcat/LongCat-AudioDiT-1B \
 # ========== 7. 下载 SoulX-FlashHead 源码 ==========
 git clone --depth 1 https://github.com/Soul-AILab/SoulX-FlashHead.git /tmp/fh
 cp -r /tmp/fh/flash_head ./
-# configs 已在 flash_head 子目录中
 
 # ========== 8. 启动服务（Lite 模型，RTX 4090 最优）==========
 export FLASHHEAD_MODEL_TYPE=lite
@@ -105,8 +103,8 @@ export FLASHHEAD_MODEL_TYPE=lite
 ```
 
 服务启动后：
-- API 文档: http://localhost:5000/docs
-- ReDoc: http://localhost:5000/redoc
+- 前端页面: http://localhost:5000/
+- API 文档: http://localhost:5000/api/docs
 
 ### 分步说明（如需自定义）
 
@@ -120,32 +118,31 @@ conda activate digital-human
 #### 安装 PyTorch
 
 ```bash
-pip install torch==2.7.1 torchvision==0.22.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install torch==2.7.1 torchvision==0.22.1
 ```
 
 #### 安装项目依赖
 
 ```bash
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r requirements.txt
 ```
 
 #### FlashAttention（4090 推理加速，必装）
 
 ```bash
 pip install ninja
-pip install flash_attn==2.8.0.post2 --no-build-isolation \
-  -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install flash_attn==2.8.0.post2 --no-build-isolation
 ```
 
 #### 下载模型权重（ModelScope + HF 镜像）
 
 ```bash
 # 安装 ModelScope（国内模型下载工具）
-pip install modelscope -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install modelscope
 
 # SoulX-FlashHead 1.3B（仅在 HuggingFace 发布，走 HF 镜像）
 export HF_ENDPOINT=https://hf-mirror.com
-pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install "huggingface_hub[cli]"
 huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
   --local-dir ./models/SoulX-FlashHead-1_3B
 
