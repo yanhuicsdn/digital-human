@@ -77,21 +77,22 @@ pip install ninja
 pip install flash_attn==2.8.0.post2 --no-build-isolation \
   -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# ========== 6. 下载模型权重（国内 HF 镜像）==========
+# ========== 6. 安装 ModelScope 并下载模型权重 ==========
+pip install modelscope -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# SoulX-FlashHead 1.3B（含 Lite & Pro，HF 镜像下载）
 export HF_ENDPOINT=https://hf-mirror.com
 pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
-
-# SoulX-FlashHead 1.3B（含 Lite & Pro）
 huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
   --local-dir ./models/SoulX-FlashHead-1_3B
 
-# Wav2Vec 音频编码器
-huggingface-cli download facebook/wav2vec2-base-960h \
-  --local-dir ./models/wav2vec2-base-960h
+# Wav2Vec 音频编码器（ModelScope 下载）
+modelscope download --model AI-ModelScope/wav2vec2-base-960h \
+  --local_dir ./models/wav2vec2-base-960h
 
-# LongCat-AudioDiT 语音克隆模型
-huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B \
-  --local-dir ./models/LongCat-AudioDiT-1B
+# LongCat-AudioDiT 语音克隆模型（ModelScope 下载）
+modelscope download --model meituan-longcat/LongCat-AudioDiT-1B \
+  --local_dir ./models/LongCat-AudioDiT-1B
 
 # ========== 7. 下载 SoulX-FlashHead 源码 ==========
 git clone --depth 1 https://github.com/Soul-AILab/SoulX-FlashHead.git /tmp/fh
@@ -136,18 +137,25 @@ pip install flash_attn==2.8.0.post2 --no-build-isolation \
   -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-#### 下载模型权重（国内镜像）
+#### 下载模型权重（ModelScope + HF 镜像）
 
 ```bash
+# 安装 ModelScope（国内模型下载工具）
+pip install modelscope -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# SoulX-FlashHead 1.3B（仅在 HuggingFace 发布，走 HF 镜像）
 export HF_ENDPOINT=https://hf-mirror.com
 pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
-
 huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
   --local-dir ./models/SoulX-FlashHead-1_3B
-huggingface-cli download facebook/wav2vec2-base-960h \
-  --local-dir ./models/wav2vec2-base-960h
-huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B \
-  --local-dir ./models/LongCat-AudioDiT-1B
+
+# Wav2Vec 音频编码器（ModelScope 下载）
+modelscope download --model AI-ModelScope/wav2vec2-base-960h \
+  --local_dir ./models/wav2vec2-base-960h
+
+# LongCat-AudioDiT 语音克隆模型（ModelScope 下载）
+modelscope download --model meituan-longcat/LongCat-AudioDiT-1B \
+  --local_dir ./models/LongCat-AudioDiT-1B
 ```
 
 #### 下载 FlashHead 源码

@@ -65,14 +65,14 @@ if [ -d "$WAV2VEC" ]; then
     echo "   ✅ Wav2Vec model: $WAV2VEC"
 else
     echo "   ⚠️  Wav2Vec model not found at: $WAV2VEC"
-    echo "       Download: huggingface-cli download facebook/wav2vec2-base-960h --local-dir $WAV2VEC"
+    echo "       Download: modelscope download --model AI-ModelScope/wav2vec2-base-960h --local_dir $WAV2VEC"
 fi
 
 if [ -d "$AUDIODIT" ]; then
     echo "   ✅ AudioDiT model: $AUDIODIT"
 else
     echo "   ⚠️  AudioDiT model not found at: $AUDIODIT"
-    echo "       Download: huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B --local-dir $AUDIODIT"
+    echo "       Download: modelscope download --model meituan-longcat/LongCat-AudioDiT-1B --local_dir $AUDIODIT"
 fi
 
 echo ""
