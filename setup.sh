@@ -22,7 +22,8 @@ fi
 
 echo ""
 echo "📦 Step 1/4: Installing Python dependencies..."
-$PYTHON -m pip install -r requirements.txt -q
+PIP_INDEX="${PIP_INDEX_URL:--i https://pypi.tuna.tsinghua.edu.cn/simple}"
+$PYTHON -m pip install -r requirements.txt $PIP_INDEX -q
 echo "   ✅ Dependencies installed"
 
 # --- Clone SoulX-FlashHead for flash_head package ---

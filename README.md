@@ -49,87 +49,121 @@
 ### 前置条件
 
 - Python 3.10+
-- CUDA (建议 RTX 4090 或更高)
+- NVIDIA GPU + CUDA (RTX 4090 推荐，24GB 显存足够)
 - FFmpeg
-- 模型权重文件
+- 约 20GB 磁盘空间（模型权重 + 代码）
 
-### 步骤 1: 创建 Conda 环境
+### 📌 RTX 4090 一键部署（国内镜像加速版）
+
+完整复制以下命令即可：
 
 ```bash
-conda create -n digital-human python=3.10
+# ========== 1. 克隆项目 ==========
+git clone git@github.com:yanhuicsdn/digital-human.git
+cd digital-human
+
+# ========== 2. 创建 Conda 环境 ==========
+conda create -n digital-human python=3.10 -y
+conda activate digital-human
+
+# ========== 3. 安装 PyTorch（国内清华源加速）==========
+pip install torch==2.7.1 torchvision==0.22.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# ========== 4. 安装项目依赖 ==========
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# ========== 5. 安装 FlashAttention（4090 推理加速必装）==========
+pip install ninja
+pip install flash_attn==2.8.0.post2 --no-build-isolation \
+  -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# ========== 6. 下载模型权重（国内 HF 镜像）==========
+export HF_ENDPOINT=https://hf-mirror.com
+pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# SoulX-FlashHead 1.3B（含 Lite & Pro）
+huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
+  --local-dir ./models/SoulX-FlashHead-1_3B
+
+# Wav2Vec 音频编码器
+huggingface-cli download facebook/wav2vec2-base-960h \
+  --local-dir ./models/wav2vec2-base-960h
+
+# LongCat-AudioDiT 语音克隆模型
+huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B \
+  --local-dir ./models/LongCat-AudioDiT-1B
+
+# ========== 7. 下载 SoulX-FlashHead 源码 ==========
+git clone --depth 1 https://github.com/Soul-AILab/SoulX-FlashHead.git /tmp/fh
+cp -r /tmp/fh/flash_head ./
+# configs 已在 flash_head 子目录中
+
+# ========== 8. 启动服务（Lite 模型，RTX 4090 最优）==========
+export FLASHHEAD_MODEL_TYPE=lite
+./run.sh
+```
+
+服务启动后：
+- API 文档: http://localhost:5000/docs
+- ReDoc: http://localhost:5000/redoc
+
+### 分步说明（如需自定义）
+
+#### 创建 Conda 环境
+
+```bash
+conda create -n digital-human python=3.10 -y
 conda activate digital-human
 ```
 
-### 步骤 2: 安装 PyTorch
+#### 安装 PyTorch
 
 ```bash
-pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
+pip install torch==2.7.1 torchvision==0.22.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-### 步骤 3: 安装依赖
+#### 安装项目依赖
 
 ```bash
-cd digital-human-service
-pip install -r requirements.txt
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-### 步骤 4: 额外依赖（可选但推荐）
+#### FlashAttention（4090 推理加速，必装）
 
 ```bash
-# FlashAttention（加速FlashHead推理）
 pip install ninja
-pip install flash_attn==2.8.0.post2 --no-build-isolation
-
-# SageAttention（Pro模型加速，可选）
-pip install sageattention==2.2.0 --no-build-isolation
-
-# Conda FFmpeg（如果系统没有）
-conda install -c conda-forge ffmpeg==7
+pip install flash_attn==2.8.0.post2 --no-build-isolation \
+  -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-### 步骤 5: 下载模型权重
+#### 下载模型权重（国内镜像）
 
 ```bash
-# 设置国内镜像（中国大陆用户）
 export HF_ENDPOINT=https://hf-mirror.com
+pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# SoulX-FlashHead 模型
-pip install "huggingface_hub[cli]"
-huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B --local-dir ./models/SoulX-FlashHead-1_3B
-huggingface-cli download facebook/wav2vec2-base-960h --local-dir ./models/wav2vec2-base-960h
-
-# LongCat-AudioDiT 模型
-huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B --local-dir ./models/LongCat-AudioDiT-1B
+huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
+  --local-dir ./models/SoulX-FlashHead-1_3B
+huggingface-cli download facebook/wav2vec2-base-960h \
+  --local-dir ./models/wav2vec2-base-960h
+huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B \
+  --local-dir ./models/LongCat-AudioDiT-1B
 ```
 
-### 步骤 6: 下载 SoulX-FlashHead 源码
+#### 下载 FlashHead 源码
 
 ```bash
-git clone https://github.com/Soul-AILab/SoulX-FlashHead.git /tmp/flashhead
-cp -r /tmp/flashhead/flash_head ./flash_head
-cp -r /tmp/flashhead/flash_head/configs ./flash_head/configs
+git clone --depth 1 https://github.com/Soul-AILab/SoulX-FlashHead.git /tmp/fh
+cp -r /tmp/fh/flash_head ./
 ```
 
-### 步骤 7: 启动服务
+#### 启动服务
 
 ```bash
-# 方式一：使用启动脚本
-export FLASHHEAD_MODEL_TYPE=lite  # 或 pro
+export FLASHHEAD_MODEL_TYPE=lite
 ./run.sh
-
-# 方式二：直接启动
-python start.py
-
-# 方式三：自定义配置
-export FLASHHEAD_CKPT_DIR=/path/to/SoulX-FlashHead-1_3B
-export FLASHHEAD_WAV2VEC_DIR=/path/to/wav2vec2-base-960h
-export AUDIODIT_MODEL_DIR=/path/to/LongCat-AudioDiT-1B
-python start.py
+# 或 python start.py
 ```
-
-服务启动后，API 文档访问：
-- Swagger UI: http://localhost:5000/docs
-- ReDoc: http://localhost:5000/redoc
 
 ## API 文档
 
