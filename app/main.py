@@ -16,6 +16,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from loguru import logger
 
 # Add project root to sys.path so SoulX-FlashHead can be imported
@@ -70,6 +72,9 @@ app = FastAPI(
     - POST `/api/generate_text` - 使用LLM生成文本内容
     - POST `/api/generate_text_stream` - 流式文本生成
     """,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
 
@@ -88,6 +93,19 @@ app.include_router(avatars.router)
 app.include_router(text_generation.router)
 app.include_router(tasks.router)
 app.include_router(download.router)
+
+# Serve frontend static pages
+STATIC_DIR = PROJECT_ROOT / "app" / "static"
+if STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_frontend():
+        return FileResponse(str(STATIC_DIR / "index.html"))
+
+    @app.get("/create-avatar", include_in_schema=False)
+    async def serve_create_avatar():
+        return FileResponse(str(STATIC_DIR / "create-avatar.html"))
 
 
 if __name__ == "__main__":

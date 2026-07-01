@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>创建数字人 - 数字人视频生成平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;line-height:1.6;color:#1e293b}
+.page{min-height:100vh;padding:24px}
+.container{max-width:800px;margin:0 auto}
+.page-header{text-align:center;padding:32px 24px;color:#fff;position:relative}
+.back-btn{position:absolute;left:0;top:32px;padding:8px 16px;background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:.875rem;cursor:pointer;transition:all .2s}
+.back-btn:hover{background:rgba(255,255,255,.3)}
+.page-title{font-size:2rem;font-weight:700;margin-bottom:16px;text-shadow:0 2px 20px rgba(0,0,0,.2)}
+.page-subtitle{font-size:1rem;opacity:.9}
+.create-card{background:#fff;border-radius:24px;padding:32px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1)}
+.form-section{margin-bottom:32px}
+.section-title{font-size:1.125rem;font-weight:600;color:#1e293b;margin-bottom:20px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
+.form-group{margin-bottom:20px}
+.form-group:last-child{margin-bottom:0}
+.form-label{display:block;font-size:.875rem;font-weight:500;color:#64748b;margin-bottom:8px}
+.required{color:#ef4444}
+.form-input{width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:.9375rem;font-family:inherit;transition:all .2s}
+.form-input:focus,.form-textarea:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.form-textarea{width:100%;min-height:80px;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:.9375rem;font-family:inherit;resize:vertical;transition:all .2s}
+.upload-group{margin-bottom:24px}
+.upload-area{position:relative;border:2px dashed #e2e8f0;border-radius:16px;padding:32px;text-align:center;transition:all .2s;cursor:pointer}
+.upload-area:hover{border-color:#6366f1;background:#f8fafc}
+.upload-area.has-file{border-style:solid;border-color:#6366f1;background:#f0f9ff}
+.file-input{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.upload-icon{font-size:2.5rem;margin-bottom:12px}
+.upload-hint{font-size:.75rem;color:#94a3b8;margin-top:8px}
+.preview-container{position:relative;display:inline-block}
+.image-preview{max-width:200px;max-height:200px;border-radius:12px;object-fit:cover}
+.remove-btn{position:absolute;top:-8px;right:-8px;width:24px;height:24px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.audio-preview{display:flex;align-items:center;gap:12px;color:#1e293b}
+.audio-icon{font-size:2rem}
+.audio-name{font-size:.9375rem;font-weight:500}
+.msg{padding:16px 20px;border-radius:12px;margin-bottom:20px;font-size:.9375rem;display:none}
+.msg.error{display:block;background:#fef2f2;border:1px solid #fecaca;color:#dc2626}
+.msg.success{display:block;background:#d1fae5;border:1px solid #a7f3d0;color:#059669}
+.submit-section{text-align:center;margin-top:32px}
+.submit-hint{margin-top:12px;font-size:.875rem;color:#94a3b8}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border:none;border-radius:12px;font-size:.9375rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;text-decoration:none}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn--primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn--primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(99,102,241,.35)}
+.btn--lg{padding:16px 40px;font-size:1.125rem;border-radius:16px}
+.spinner{width:24px;height:24px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:768px){.page{padding:16px}.page-header{padding:24px 16px}.back-btn{position:static;display:block;margin-bottom:16px}.page-title{font-size:1.5rem}.create-card{padding:20px}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="container">
+<header class="page-header">
+<button class="back-btn" onclick="location.href='/'">← 返回首页</button>
+<h1 class="page-title">创建数字人</h1>
+<p class="page-subtitle">上传人物图像和音频，创建新的数字人形象</p>
+</header>
+
+<main class="create-card">
+<form onsubmit="handleSubmit(event)">
+<section class="form-section">
+<h3 class="section-title">基本信息</h3>
+<div class="form-group">
+<label class="form-label">名称 <span class="required">*</span></label>
+<input type="text" class="form-input" id="nameInput" placeholder="请输入数字人名称" maxlength="50" required>
+</div>
+<div class="form-group">
+<label class="form-label">描述</label>
+<textarea class="form-textarea" id="descInput" placeholder="请输入数字人描述（可选）" maxlength="200"></textarea>
+</div>
+</section>
+
+<section class="form-section">
+<h3 class="section-title">上传文件</h3>
+
+<div class="upload-group">
+<label class="form-label">人物图像 <span class="required">*</span></label>
+<div class="upload-area" id="imageArea">
+<input type="file" class="file-input" accept="image/*" onchange="handleImage(event)">
+<div id="imagePlaceholder">
+<div class="upload-icon">📷</div>
+<p>点击或拖拽上传图像</p>
+<p class="upload-hint">支持 JPG、PNG 格式</p>
+</div>
+<div id="imagePreview" style="display:none" class="preview-container">
+<img class="image-preview" id="previewImg">
+<button type="button" class="remove-btn" onclick="removeImage()">✕</button>
+</div>
+</div>
+</div>
+
+<div class="upload-group">
+<label class="form-label">音频文件 <span class="required">*</span>（必须是 WAV 格式）</label>
+<div class="upload-area" id="audioArea">
+<input type="file" class="file-input" accept=".wav" onchange="handleAudio(event)">
+<div id="audioPlaceholder">
+<div class="upload-icon">🎵</div>
+<p>点击或拖拽上传音频</p>
+<p class="upload-hint">仅支持 WAV 格式</p>
+</div>
+<div id="audioPreview" style="display:none" class="audio-preview">
+<div class="audio-icon">🎵</div>
+<span class="audio-name" id="audioName"></span>
+<button type="button" class="remove-btn" onclick="removeAudio()">✕</button>
+</div>
+</div>
+</div>
+
+<div class="form-group">
+<label class="form-label">语音文本（建议填写，一字不差能显著提升克隆效果）</label>
+<textarea class="form-textarea" id="promptTextInput" placeholder="上传语音的文本，要求一字不差（建议填写）" maxlength="500"></textarea>
+</div>
+</section>
+
+<div id="errorMsg" class="msg error"></div>
+<div id="successMsg" class="msg success"></div>
+
+<div class="submit-section">
+<button type="submit" class="btn btn--primary btn--lg" id="submitBtn">创建数字人</button>
+<p class="submit-hint" id="hintText">请填写名称，并上传图片和音频</p>
+</div>
+</form>
+</main>
+</div>
+</div>
+
+<script>
+const API_BASE = ''
+let imageFile = null, audioFile = null
+
+function handleImage(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  imageFile = file
+  document.getElementById('imagePlaceholder').style.display = 'none'
+  const preview = document.getElementById('imagePreview')
+  preview.style.display = 'block'
+  document.getElementById('previewImg').src = URL.createObjectURL(file)
+  document.getElementById('imageArea').classList.add('has-file')
+  updateHint()
+}
+
+function removeImage() {
+  imageFile = null
+  document.getElementById('imagePreview').style.display = 'none'
+  document.getElementById('imagePlaceholder').style.display = 'block'
+  document.getElementById('imageArea').classList.remove('has-file')
+  document.querySelector('#imageArea .file-input').value = ''
+  updateHint()
+}
+
+function handleAudio(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  if (!file.name.toLowerCase().endsWith('.wav')) {
+    showMsg('error', '音频文件必须是 WAV 格式')
+    e.target.value = ''
+    return
+  }
+  audioFile = file
+  document.getElementById('audioPlaceholder').style.display = 'none'
+  document.getElementById('audioPreview').style.display = 'flex'
+  document.getElementById('audioName').textContent = file.name
+  document.getElementById('audioArea').classList.add('has-file')
+  document.getElementById('errorMsg').style.display = 'none'
+  updateHint()
+}
+
+function removeAudio() {
+  audioFile = null
+  document.getElementById('audioPreview').style.display = 'none'
+  document.getElementById('audioPlaceholder').style.display = 'block'
+  document.getElementById('audioArea').classList.remove('has-file')
+  document.querySelector('#audioArea .file-input').value = ''
+  updateHint()
+}
+
+function updateHint() {
+  const name = document.getElementById('nameInput').value.trim()
+  const hint = document.getElementById('hintText')
+  if (!name) hint.textContent = '请填写名称'
+  else if (!imageFile) hint.textContent = '请上传人物图像'
+  else if (!audioFile) hint.textContent = '请上传 WAV 音频文件'
+  else hint.textContent = '✓ 可以提交了'
+}
+
+document.getElementById('nameInput').addEventListener('input', updateHint)
+
+function showMsg(type, text) {
+  const el = type === 'error' ? document.getElementById('errorMsg') : document.getElementById('successMsg')
+  el.textContent = text
+  el.className = 'msg ' + type
+}
+
+async function handleSubmit(e) {
+  e.preventDefault()
+  const name = document.getElementById('nameInput').value.trim()
+  const desc = document.getElementById('descInput').value.trim()
+  const promptText = document.getElementById('promptTextInput').value.trim()
+
+  if (!name || !imageFile || !audioFile) {
+    showMsg('error', '请填写名称并上传图片和音频')
+    return
+  }
+
+  const btn = document.getElementById('submitBtn')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> 创建中...'
+  showMsg('error', '')
+  showMsg('success', '')
+
+  const fd = new FormData()
+  fd.append('name', name)
+  fd.append('description', desc)
+  fd.append('prompt_text', promptText)
+  fd.append('image', imageFile)
+  fd.append('audio', audioFile)
+
+  try {
+    const resp = await fetch(API_BASE + '/api/avatar/create', {
+      method: 'POST',
+      body: fd
+    })
+    if (!resp.ok) throw new Error((await resp.json()).detail || '创建失败')
+    const data = await resp.json()
+    const avatarId = data.avatar_id || data.id || ''
+    showMsg('success', '数字人 "' + name + '" 创建成功！ID: ' + avatarId)
+    document.getElementById('nameInput').value = ''
+    document.getElementById('descInput').value = ''
+    document.getElementById('promptTextInput').value = ''
+    removeImage()
+    removeAudio()
+    setTimeout(() => { location.href = '/' }, 2000)
+  } catch(e) {
+    showMsg('error', '创建失败：' + e.message)
+  }
+  btn.disabled = false
+  btn.innerHTML = '创建数字人'
+}
+</script>
+</body>
+</html>
