@@ -161,7 +161,7 @@ def generate_speech(
             pw = torch.nn.functional.pad(pw, (0, full_hop - pw.shape[-1] % full_hop))
         pw = torch.nn.functional.pad(pw, (0, full_hop * off))
         with torch.no_grad():
-            plt = model.vae.encode(pw.unsqueeze(0).to(device))
+            plt = model.vae.encode(pw[None, None, :].to(device))
         if off:
             plt = plt[..., :-off]
         prompt_dur = plt.shape[-1]

@@ -5,9 +5,9 @@ from fastapi import APIRouter
 router = APIRouter()
 
 
-@router.get("/", summary="Index", tags=["System"])
-async def index():
-    """Health check / root endpoint."""
+@router.get("/api/health", summary="Health Check", tags=["System"])
+async def health_check():
+    """Health check endpoint."""
     return {
         "service": "数字人视频生成服务 (Digital Human Video Generation Service)",
         "version": "0.1.0",
