@@ -57,7 +57,7 @@ if [ -d "$FLASHCKPT" ]; then
     echo "   ✅ FlashHead model: $FLASHCKPT"
 else
     echo "   ⚠️  FlashHead model not found at: $FLASHCKPT"
-    echo "       Download: huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B --local-dir $FLASHCKPT"
+    echo "       Download: modelscope download --model Soul-AILab/SoulX-FlashHead-1_3B --local_dir $FLASHCKPT"
 fi
 
 if [ -d "$WAV2VEC" ]; then

@@ -76,20 +76,18 @@ pip install -r requirements.txt
 pip install ninja
 pip install flash_attn==2.8.0.post2 --no-build-isolation
 
-# ========== 6. 安装 ModelScope & 下载模型权重 ==========
+# ========== 6. 安装 ModelScope & 下载所有模型权重 ==========
 pip install modelscope
 
-# SoulX-FlashHead 1.3B（仅 HF 发布，走 HF 镜像）
-export HF_ENDPOINT=https://hf-mirror.com
-pip install "huggingface_hub[cli]"
-huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
-  --local-dir ./models/SoulX-FlashHead-1_3B
+# SoulX-FlashHead 1.3B（含 Lite & Pro）
+modelscope download --model Soul-AILab/SoulX-FlashHead-1_3B \
+  --local_dir ./models/SoulX-FlashHead-1_3B
 
-# Wav2Vec 音频编码器（ModelScope 下载）
+# Wav2Vec 音频编码器
 modelscope download --model AI-ModelScope/wav2vec2-base-960h \
   --local_dir ./models/wav2vec2-base-960h
 
-# LongCat-AudioDiT 语音克隆模型（ModelScope 下载）
+# LongCat-AudioDiT 语音克隆模型
 modelscope download --model meituan-longcat/LongCat-AudioDiT-1B \
   --local_dir ./models/LongCat-AudioDiT-1B
 
@@ -102,9 +100,11 @@ export FLASHHEAD_MODEL_TYPE=lite
 ./run.sh
 ```
 
-服务启动后：
-- 前端页面: http://localhost:5000/
-- API 文档: http://localhost:5000/api/docs
+> 💡 如果 pip 下载慢，可以设置阿里云镜像加速：
+> ```bash
+> export PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+> ./run.sh
+> ```
 
 ### 分步说明（如需自定义）
 
@@ -134,23 +134,17 @@ pip install ninja
 pip install flash_attn==2.8.0.post2 --no-build-isolation
 ```
 
-#### 下载模型权重（ModelScope + HF 镜像）
+#### 下载模型权重（全部通过 ModelScope）
 
 ```bash
-# 安装 ModelScope（国内模型下载工具）
 pip install modelscope
 
-# SoulX-FlashHead 1.3B（仅在 HuggingFace 发布，走 HF 镜像）
-export HF_ENDPOINT=https://hf-mirror.com
-pip install "huggingface_hub[cli]"
-huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
-  --local-dir ./models/SoulX-FlashHead-1_3B
+modelscope download --model Soul-AILab/SoulX-FlashHead-1_3B \
+  --local_dir ./models/SoulX-FlashHead-1_3B
 
-# Wav2Vec 音频编码器（ModelScope 下载）
 modelscope download --model AI-ModelScope/wav2vec2-base-960h \
   --local_dir ./models/wav2vec2-base-960h
 
-# LongCat-AudioDiT 语音克隆模型（ModelScope 下载）
 modelscope download --model meituan-longcat/LongCat-AudioDiT-1B \
   --local_dir ./models/LongCat-AudioDiT-1B
 ```
