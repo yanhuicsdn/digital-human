@@ -13,7 +13,7 @@ from typing import Optional
 from loguru import logger
 
 from app.config import (
-    TTS_NFE,
+    TTS_DEFAULT_NFE as TTS_NFE,
     TTS_GUIDANCE_STRENGTH,
     TTS_GUIDANCE_METHOD,
     TTS_SAMPLE_RATE,

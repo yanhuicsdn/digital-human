@@ -53,49 +53,59 @@
 - FFmpeg
 - 约 20GB 磁盘空间（模型权重 + 代码）
 
-### 📌 RTX 4090 快速部署
+### 📌 RTX 4090 一键部署（国内镜像加速版）
 
 完整复制以下命令即可：
 
 ```bash
-# ========== 1. 克隆 ==========
+# ========== 1. 克隆项目 ==========
 git clone git@github.com:yanhuicsdn/digital-human.git
 cd digital-human
 
-# ========== 2. 环境 ==========
+# ========== 2. 创建 Conda 环境 ==========
 conda create -n digital-human python=3.10 -y
 conda activate digital-human
 
-# ========== 3. pip 装依赖（可先设阿里云镜像）==========
-export PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
-pip install torch==2.7.1 torchvision==0.22.1
-pip install -r requirements.txt
+# ========== 3. 安装 PyTorch（国内清华源加速）==========
+pip install torch==2.7.1 torchvision==0.22.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# ========== 4. 安装项目依赖 ==========
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# ========== 5. 安装 FlashAttention（4090 推理加速必装）==========
 pip install ninja
-pip install flash_attn==2.8.0.post2 --no-build-isolation
+pip install flash_attn==2.8.0.post2 --no-build-isolation \
+  -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# ========== 4. ModelScope 下载所有模型 ==========
-pip install modelscope
-modelscope download --model Soul-AILab/SoulX-FlashHead-1_3B \
-  --local_dir ./models/SoulX-FlashHead-1_3B
-modelscope download --model AI-ModelScope/wav2vec2-base-960h \
-  --local_dir ./models/wav2vec2-base-960h
-modelscope download --model meituan-longcat/LongCat-AudioDiT-1B \
-  --local_dir ./models/LongCat-AudioDiT-1B
+# ========== 6. 下载模型权重（国内 HF 镜像）==========
+export HF_ENDPOINT=https://hf-mirror.com
+pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# ========== 5. FlashHead 源码 ==========
+# SoulX-FlashHead 1.3B（含 Lite & Pro）
+huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
+  --local-dir ./models/SoulX-FlashHead-1_3B
+
+# Wav2Vec 音频编码器
+huggingface-cli download facebook/wav2vec2-base-960h \
+  --local-dir ./models/wav2vec2-base-960h
+
+# LongCat-AudioDiT 语音克隆模型
+huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B \
+  --local-dir ./models/LongCat-AudioDiT-1B
+
+# ========== 7. 下载 SoulX-FlashHead 源码 ==========
 git clone --depth 1 https://github.com/Soul-AILab/SoulX-FlashHead.git /tmp/fh
 cp -r /tmp/fh/flash_head ./
+# configs 已在 flash_head 子目录中
 
-# ========== 6. 启动 ==========
+# ========== 8. 启动服务（Lite 模型，RTX 4090 最优）==========
 export FLASHHEAD_MODEL_TYPE=lite
 ./run.sh
 ```
 
-> 💡 如果 pip 下载慢，可以设置阿里云镜像加速：
-> ```bash
-> export PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
-> ./run.sh
-> ```
+服务启动后：
+- API 文档: http://localhost:5000/docs
+- ReDoc: http://localhost:5000/redoc
 
 ### 分步说明（如需自定义）
 
@@ -109,35 +119,35 @@ conda activate digital-human
 #### 安装 PyTorch
 
 ```bash
-pip install torch==2.7.1 torchvision==0.22.1
+pip install torch==2.7.1 torchvision==0.22.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 #### 安装项目依赖
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 #### FlashAttention（4090 推理加速，必装）
 
 ```bash
 pip install ninja
-pip install flash_attn==2.8.0.post2 --no-build-isolation
+pip install flash_attn==2.8.0.post2 --no-build-isolation \
+  -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-#### 下载模型权重（全部通过 ModelScope）
+#### 下载模型权重（国内镜像）
 
 ```bash
-pip install modelscope
+export HF_ENDPOINT=https://hf-mirror.com
+pip install "huggingface_hub[cli]" -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-modelscope download --model Soul-AILab/SoulX-FlashHead-1_3B \
-  --local_dir ./models/SoulX-FlashHead-1_3B
-
-modelscope download --model AI-ModelScope/wav2vec2-base-960h \
-  --local_dir ./models/wav2vec2-base-960h
-
-modelscope download --model meituan-longcat/LongCat-AudioDiT-1B \
-  --local_dir ./models/LongCat-AudioDiT-1B
+huggingface-cli download Soul-AILab/SoulX-FlashHead-1_3B \
+  --local-dir ./models/SoulX-FlashHead-1_3B
+huggingface-cli download facebook/wav2vec2-base-960h \
+  --local-dir ./models/wav2vec2-base-960h
+huggingface-cli download meituan-longcat/LongCat-AudioDiT-1B \
+  --local-dir ./models/LongCat-AudioDiT-1B
 ```
 
 #### 下载 FlashHead 源码
@@ -147,6 +157,7 @@ git clone --depth 1 https://github.com/Soul-AILab/SoulX-FlashHead.git /tmp/fh
 cp -r /tmp/fh/flash_head ./
 ```
 
+#### 启动服务
 
 ```bash
 export FLASHHEAD_MODEL_TYPE=lite

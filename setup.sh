@@ -21,13 +21,19 @@ if ! command -v $PYTHON &> /dev/null; then
 fi
 
 echo ""
-echo "📦 Step 1/4: Installing Python dependencies..."
+echo "📦 Step 1/5: Installing Python dependencies..."
 $PYTHON -m pip install -r requirements.txt -q
 echo "   ✅ Dependencies installed"
 
+# --- Install ModelScope ---
+echo ""
+echo "📦 Step 2/5: Installing ModelScope (for model download)..."
+$PYTHON -m pip install modelscope -q
+echo "   ✅ ModelScope installed"
+
 # --- Clone SoulX-FlashHead for flash_head package ---
 echo ""
-echo "📦 Step 2/4: Setting up SoulX-FlashHead dependency..."
+echo "📦 Step 3/5: Setting up SoulX-FlashHead dependency..."
 if [ -d "flash_head" ] && [ -f "flash_head/inference.py" ]; then
     echo "   ✅ flash_head/ already exists, skipping"
 else
@@ -42,37 +48,38 @@ fi
 
 # --- Create data directories ---
 echo ""
-echo "📁 Step 3/4: Ensuring data directories..."
+echo "📁 Step 4/5: Ensuring data directories..."
 mkdir -p data/avatars data/generated_audio data/generated_videos
 echo "   ✅ Data directories ready"
 
-# --- Verify model paths (warn only) ---
+# --- Download models via ModelScope ---
 echo ""
-echo "🔍 Step 4/4: Checking model paths..."
+echo "📦 Step 5/5: Downloading models via ModelScope..."
+mkdir -p models
+
+download_model() {
+    local model_id="$1"
+    local local_dir="$2"
+    if [ -d "$local_dir" ] && [ -n "$(ls -A "$local_dir" 2>/dev/null)" ]; then
+        echo "   ✅ Already exists: $local_dir"
+    else
+        echo "   Downloading $model_id → $local_dir ..."
+        modelscope download --model "$model_id" --local_dir "$local_dir"
+        echo "   ✅ Downloaded: $model_id"
+    fi
+}
+
+# SoulX-FlashHead 1.3B — via ModelScope
 FLASHCKPT="${FLASHHEAD_CKPT_DIR:-${SCRIPT_DIR}/models/SoulX-FlashHead-1_3B}"
+download_model "Soul-AILab/SoulX-FlashHead-1_3B" "$FLASHCKPT"
+
+# Wav2Vec 音频编码器
 WAV2VEC="${FLASHHEAD_WAV2VEC_DIR:-${SCRIPT_DIR}/models/wav2vec2-base-960h}"
+download_model "AI-ModelScope/wav2vec2-base-960h" "$WAV2VEC"
+
+# LongCat-AudioDiT 语音克隆/TTS 模型
 AUDIODIT="${AUDIODIT_MODEL_DIR:-${SCRIPT_DIR}/models/LongCat-AudioDiT-1B}"
-
-if [ -d "$FLASHCKPT" ]; then
-    echo "   ✅ FlashHead model: $FLASHCKPT"
-else
-    echo "   ⚠️  FlashHead model not found at: $FLASHCKPT"
-    echo "       Download: modelscope download --model Soul-AILab/SoulX-FlashHead-1_3B --local_dir $FLASHCKPT"
-fi
-
-if [ -d "$WAV2VEC" ]; then
-    echo "   ✅ Wav2Vec model: $WAV2VEC"
-else
-    echo "   ⚠️  Wav2Vec model not found at: $WAV2VEC"
-    echo "       Download: modelscope download --model AI-ModelScope/wav2vec2-base-960h --local_dir $WAV2VEC"
-fi
-
-if [ -d "$AUDIODIT" ]; then
-    echo "   ✅ AudioDiT model: $AUDIODIT"
-else
-    echo "   ⚠️  AudioDiT model not found at: $AUDIODIT"
-    echo "       Download: modelscope download --model meituan-longcat/LongCat-AudioDiT-1B --local_dir $AUDIODIT"
-fi
+download_model "meituan-longcat/LongCat-AudioDiT-1B" "$AUDIODIT"
 
 echo ""
 echo "🎉 Setup complete! Start the server with:"
