@@ -19,7 +19,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import imageio
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -150,6 +149,8 @@ def generate_video(
     """
     Generate a talking-head video using SoulX-FlashHead.
 
+    Uses ffmpeg pipe for direct video writing (avoids imageio frame-by-frame overhead).
+
     Args:
         cond_image_path: Path to the condition (avatar) image.
         audio_path: Path to the driving audio file.
@@ -172,7 +173,17 @@ def generate_video(
     pipeline = _pipeline
     infer_params = _infer_params
 
+    # Override resolution from config (environment variables) — no YAML edit needed
+    from app.config import VIDEO_RESOLUTION_WIDTH, VIDEO_RESOLUTION_HEIGHT
+    if VIDEO_RESOLUTION_WIDTH and VIDEO_RESOLUTION_HEIGHT:
+        infer_params["width"] = VIDEO_RESOLUTION_WIDTH
+        infer_params["height"] = VIDEO_RESOLUTION_HEIGHT
+
+    logger.info(f"Video resolution: {infer_params['width']}x{infer_params['height']} (9:{infer_params['width']/infer_params['height']*9:.0f})")
+
+    # ------------------------------------------------------------------
     # 1. Prepare base data (image + seed)
+    # ------------------------------------------------------------------
     if progress_callback:
         progress_callback(0.05, "Preparing input data...")
 
@@ -193,7 +204,9 @@ def generate_video(
     motion_frames_num = infer_params["motion_frames_num"]
     slice_len = frame_num - motion_frames_num
 
+    # ------------------------------------------------------------------
     # 2. Load audio
+    # ------------------------------------------------------------------
     if progress_callback:
         progress_callback(0.1, "Loading audio...")
 
@@ -210,8 +223,11 @@ def generate_video(
         progress_callback(0.15, f"Audio loaded, generating {len(human_speech_array_all) / sample_rate:.1f}s video...")
 
     generated_list = []
+    device = pipeline.device
 
-    # 3. Generation
+    # ------------------------------------------------------------------
+    # 3. Generation (optimized: fewer GPU syncs, async CPU transfer)
+    # ------------------------------------------------------------------
     if audio_encode_mode == "once":
         # Pad audio
         remainder = (len(human_speech_array_all) - human_speech_array_frame_num) % human_speech_array_slice_len
@@ -235,14 +251,18 @@ def generate_video(
                     f"Generating video chunk {chunk_idx + 1}/{total_chunks}...",
                 )
 
+            # Single sync before generation is enough
             torch.cuda.synchronize()
             video = run_pipeline_fn(pipeline, audio_embedding_chunk)
 
             if chunk_idx != 0:
                 video = video[motion_frames_num:]
 
-            torch.cuda.synchronize()
+            # Async CPU transfer — overlaps with next iteration
             generated_list.append(video.cpu())
+
+        # One final sync after all generation
+        torch.cuda.synchronize()
 
     elif audio_encode_mode == "stream":
         cached_audio_length_sum = sample_rate * cached_audio_duration
@@ -275,33 +295,59 @@ def generate_video(
             torch.cuda.synchronize()
             video = run_pipeline_fn(pipeline, audio_embedding)
             video = video[motion_frames_num:]
-            torch.cuda.synchronize()
 
             generated_list.append(video.cpu())
 
-    # 4. Save video
+        torch.cuda.synchronize()
+
+    # ------------------------------------------------------------------
+    # 4. Save video — use ffmpeg pipe directly (avoid imageio overhead)
+    # ------------------------------------------------------------------
     if progress_callback:
         progress_callback(0.92, "Saving video...")
 
-    temp_video_path = output_video_path.replace(".mp4", "_tmp.mp4")
     os.makedirs(os.path.dirname(output_video_path) or ".", exist_ok=True)
+    temp_video_path = output_video_path.replace(".mp4", "_tmp.mp4")
+
+    # Get video dimensions from first frame
+    first_frames = generated_list[0]
+    H, W = first_frames.shape[2], first_frames.shape[3]
 
     try:
-        with imageio.get_writer(
-            temp_video_path,
-            format="mp4",
-            mode="I",
-            fps=tgt_fps,
-            codec="h264",
-            ffmpeg_params=["-bf", "0"],
-        ) as writer:
-            for frames in generated_list:
-                frames_np = frames.numpy().astype(np.uint8)
-                for i in range(frames_np.shape[0]):
-                    writer.append_data(frames_np[i, :, :, :])
+        from app.config import (
+            VIDEO_CRF,
+            VIDEO_PRESET,
+        )
 
-        # Merge video + audio
-        cmd = [
+        # Step A: Write raw video via ffmpeg pipe (much faster than imageio)
+        ffmpeg_cmd = [
+            "ffmpeg", "-y",
+            "-f", "rawvideo",
+            "-pix_fmt", "rgb24",
+            "-s", f"{W}x{H}",
+            "-r", str(tgt_fps),
+            "-i", "-",           # stdin pipe
+            "-c:v", "libx264",
+            "-preset", VIDEO_PRESET,
+            "-crf", str(VIDEO_CRF),
+            "-pix_fmt", "yuv420p",
+            "-bf", "0",
+            temp_video_path,
+        ]
+        proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+        for frames in generated_list:
+            frames_np = frames.numpy().astype(np.uint8)
+            # frames shape: (num_frames, C, H, W) → write as raw bytes
+            proc.stdin.write(frames_np.tobytes())
+
+        proc.stdin.close()
+        proc.wait()
+        if proc.returncode != 0:
+            raise RuntimeError(f"ffmpeg raw video pipe failed with code {proc.returncode}")
+
+        # Step B: Merge audio into video
+        merge_cmd = [
             "ffmpeg", "-y",
             "-i", temp_video_path,
             "-i", audio_path,
@@ -310,8 +356,9 @@ def generate_video(
             "-shortest",
             output_video_path,
         ]
-        subprocess.run(cmd, check=True, capture_output=True)
-        logger.info(f"Video saved to {output_video_path}")
+        subprocess.run(merge_cmd, check=True, capture_output=True)
+
+        logger.info(f"Video saved to {output_video_path} ({W}x{H} @ {tgt_fps}fps, {total_chunks} chunks)")
     except Exception as e:
         raise RuntimeError(f"Failed to save video: {e}")
     finally:

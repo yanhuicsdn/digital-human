@@ -42,14 +42,23 @@ PORT = int(os.environ.get("PORT", "5000"))
 
 # ===== TTS config =====
 TTS_SAMPLE_RATE = 24000  # LongCat-AudioDiT output sample rate
-TTS_DEFAULT_NFE = 16
-TTS_GUIDANCE_STRENGTH = 4.0
-TTS_GUIDANCE_METHOD = "apg"  # "cfg" or "apg"
+TTS_DEFAULT_NFE = int(os.environ.get("TTS_NFE", "16"))  # 8=faster/lower quality, 16=balanced, 32=best quality
+TTS_GUIDANCE_STRENGTH = float(os.environ.get("TTS_GUIDANCE_STRENGTH", "4.0"))  # higher = more expressive
+TTS_GUIDANCE_METHOD = os.environ.get("TTS_GUIDANCE_METHOD", "apg")  # "cfg" or "apg" (APG is better)
 
 # ===== Video generation config =====
-VIDEO_AUDIO_ENCODE_MODE = "once"
-VIDEO_USE_FACE_CROP = False
-VIDEO_DEFAULT_SEED = 42
+VIDEO_AUDIO_ENCODE_MODE = os.environ.get("VIDEO_AUDIO_ENCODE_MODE", "once")  # "once" or "stream"
+VIDEO_USE_FACE_CROP = os.environ.get("VIDEO_USE_FACE_CROP", "False").lower() == "true"
+VIDEO_DEFAULT_SEED = int(os.environ.get("VIDEO_DEFAULT_SEED", "42"))
+
+# Video resolution (from infer_params.yaml — read at runtime)
+# The actual resolution is set in flash_head/configs/infer_params.yaml
+VIDEO_RESOLUTION_WIDTH = int(os.environ.get("VIDEO_RESOLUTION_WIDTH", "576"))
+VIDEO_RESOLUTION_HEIGHT = int(os.environ.get("VIDEO_RESOLUTION_HEIGHT", "1024"))
+
+# FFmpeg video encoding quality (lower CRF = better quality, 0=lossless, 18=visually lossless, 23=default)
+VIDEO_CRF = int(os.environ.get("VIDEO_CRF", "18"))
+VIDEO_PRESET = os.environ.get("VIDEO_PRESET", "medium")  # ultrafast, fast, medium, slow, veryslow
 
 # ===== LLM config for text generation =====
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "")

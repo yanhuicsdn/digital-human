@@ -66,7 +66,7 @@ class TaskQueue:
         """Main worker loop — processes queued tasks one by one."""
         logger.info("Task worker loop started")
 
-        # Load models on startup
+        # Load models on startup (best-effort, errors are logged)
         try:
             logger.info("Pre-loading models...")
             load_tts_model()
