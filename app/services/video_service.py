@@ -239,10 +239,22 @@ def generate_video(
             )
 
         audio_embedding_all = get_audio_embedding_fn(pipeline, human_speech_array_all)
+        embed_len = audio_embedding_all.shape[1]
+
+        # Generate chunks covering the FULL audio embedding.
+        # Original code missed the last ~31 frames (~1.2s) because it only
+        # produced floor((embed_len-frame_num)/slice_len) chunks.
+        # Fix: add one final chunk aligned to the tail of the embedding.
+        num_reg_chunks = (embed_len - frame_num) // slice_len
         audio_embedding_chunks_list = [
             audio_embedding_all[:, i * slice_len: i * slice_len + frame_num].contiguous()
-            for i in range((audio_embedding_all.shape[1] - frame_num) // slice_len)
+            for i in range(num_reg_chunks)
         ]
+        # Add the last chunk (covers remaining frames at the end)
+        tail_start = max(0, embed_len - frame_num)
+        audio_embedding_chunks_list.append(
+            audio_embedding_all[:, tail_start:tail_start + frame_num].contiguous()
+        )
 
         total_chunks = len(audio_embedding_chunks_list)
         for chunk_idx, audio_embedding_chunk in enumerate(audio_embedding_chunks_list):
