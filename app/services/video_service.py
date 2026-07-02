@@ -319,14 +319,21 @@ def generate_video(
             VIDEO_PRESET,
         )
 
-        # Step A: Write raw video via ffmpeg pipe (much faster than imageio)
+        # Step A: Write all frames to a temporary raw video file on disk
+        #         then encode with ffmpeg (more reliable than pipe for large data)
+        raw_path = temp_video_path.replace("_tmp.mp4", "_raw.bin")
+        with open(raw_path, "wb") as f:
+            for frames in generated_list:
+                frames_np = frames.numpy().astype(np.uint8)  # (N, C, H, W)
+                f.write(frames_np.tobytes())
+
         ffmpeg_cmd = [
             "ffmpeg", "-y",
             "-f", "rawvideo",
             "-pix_fmt", "rgb24",
             "-s", f"{W}x{H}",
             "-r", str(tgt_fps),
-            "-i", "-",           # stdin pipe
+            "-i", raw_path,
             "-c:v", "libx264",
             "-preset", VIDEO_PRESET,
             "-crf", str(VIDEO_CRF),
@@ -334,27 +341,10 @@ def generate_video(
             "-bf", "0",
             temp_video_path,
         ]
-        proc = subprocess.Popen(
-            ffmpeg_cmd,
-            stdin=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-        total_frames = sum(f.shape[0] for f in generated_list)
-        written = 0
-        for frames in generated_list:
-            frames_np = frames.numpy().astype(np.uint8)  # (N, C, H, W)
-            # Write frame by frame to avoid pipe buffer overflow
-            for i in range(frames_np.shape[0]):
-                proc.stdin.write(frames_np[i].tobytes())
-                written += 1
-
-        proc.stdin.close()
-        proc.wait()
-        if proc.returncode != 0:
-            stderr_out = proc.stderr.read().decode("utf-8", errors="replace")[:500]
+        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
+        if result.returncode != 0:
             raise RuntimeError(
-                f"ffmpeg pipe failed (code {proc.returncode}): {stderr_out}"
+                f"ffmpeg encode failed (code {result.returncode}): {result.stderr[:500]}"
             )
 
         # Step B: Merge audio into video
@@ -373,8 +363,9 @@ def generate_video(
     except Exception as e:
         raise RuntimeError(f"Failed to save video: {e}")
     finally:
-        if os.path.exists(temp_video_path):
-            os.remove(temp_video_path)
+        for p in [temp_video_path, raw_path]:
+            if os.path.exists(p):
+                os.remove(p)
 
     if progress_callback:
         progress_callback(1.0, "Done!")
