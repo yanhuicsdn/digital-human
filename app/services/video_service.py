@@ -334,17 +334,28 @@ def generate_video(
             "-bf", "0",
             temp_video_path,
         ]
-        proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        proc = subprocess.Popen(
+            ffmpeg_cmd,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
 
+        total_frames = sum(f.shape[0] for f in generated_list)
+        written = 0
         for frames in generated_list:
-            frames_np = frames.numpy().astype(np.uint8)
-            # frames shape: (num_frames, C, H, W) → write as raw bytes
-            proc.stdin.write(frames_np.tobytes())
+            frames_np = frames.numpy().astype(np.uint8)  # (N, C, H, W)
+            # Write frame by frame to avoid pipe buffer overflow
+            for i in range(frames_np.shape[0]):
+                proc.stdin.write(frames_np[i].tobytes())
+                written += 1
 
         proc.stdin.close()
         proc.wait()
         if proc.returncode != 0:
-            raise RuntimeError(f"ffmpeg raw video pipe failed with code {proc.returncode}")
+            stderr_out = proc.stderr.read().decode("utf-8", errors="replace")[:500]
+            raise RuntimeError(
+                f"ffmpeg pipe failed (code {proc.returncode}): {stderr_out}"
+            )
 
         # Step B: Merge audio into video
         merge_cmd = [
