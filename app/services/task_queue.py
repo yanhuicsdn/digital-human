@@ -137,6 +137,7 @@ class TaskQueue:
                     nfe=TTS_NFE,
                     guidance_strength=TTS_GUIDANCE_STRENGTH,
                     guidance_method=TTS_GUIDANCE_METHOD,
+                    speed=task.get("speed", 1.0),
                 )
             except Exception as e:
                 raise RuntimeError(f"TTS generation failed: {e}")

@@ -37,6 +37,7 @@ async def submit_task(request: SubmitTaskRequest):
         task_id=task_id,
         avatar_id=request.avatar_id,
         text=request.text,
+        speed=request.speed,
     )
 
     # 获取当前队列长度作为排队位置

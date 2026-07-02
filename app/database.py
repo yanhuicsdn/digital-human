@@ -80,7 +80,7 @@ class JsonDatabase:
 
     # ---- Tasks ----
 
-    def create_task(self, task_id: str, avatar_id: str, text: str) -> dict:
+    def create_task(self, task_id: str, avatar_id: str, text: str, speed: float = 1.0) -> dict:
         """Create a new task record."""
         with self._lock:
             now = datetime.now().isoformat()
@@ -88,6 +88,7 @@ class JsonDatabase:
                 "id": task_id,
                 "avatar_id": avatar_id,
                 "text": text,
+                "speed": speed,
                 "status": "queued",
                 "progress": 0.0,
                 "video_path": None,

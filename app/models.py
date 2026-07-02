@@ -27,6 +27,7 @@ class SubmitTaskRequest(BaseModel):
     """Request model for submitting a video generation task."""
     text: str = Field(..., description="Text content for the digital human to speak")
     avatar_id: str = Field(..., description="Avatar ID to use")
+    speed: float = Field(default=1.0, ge=0.5, le=2.0, description="Speaking speed (0.5=half speed, 1.0=normal, 2.0=double speed)")
 
 
 class AvatarResponse(BaseModel):

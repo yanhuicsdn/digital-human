@@ -106,6 +106,7 @@ def generate_speech(
     guidance_strength: float = 4.0,
     guidance_method: str = "apg",
     seed: int = 1024,
+    speed: float = 1.0,
 ) -> str:
     """
     Generate speech using LongCat-AudioDiT.
@@ -119,6 +120,7 @@ def generate_speech(
         guidance_strength: CFG/APG strength.
         guidance_method: "cfg" or "apg".
         seed: Random seed.
+        speed: Speaking speed multiplier (1.0=normal, 1.2=faster, 0.8=slower).
 
     Returns:
         Path to the generated audio file.
@@ -169,7 +171,7 @@ def generate_speech(
         prompt_wav = None
         prompt_dur = 0
 
-    # Duration estimation
+    # Duration estimation (scale by speed: faster=shorter duration)
     prompt_time = prompt_dur * full_hop / sr
     dur_sec = approx_duration_from_text_fn(text, max_duration=max_duration - prompt_time)
     if not no_prompt:
@@ -177,7 +179,8 @@ def generate_speech(
         ratio = np.clip(prompt_time / approx_pd, 1.0, 1.5)
         dur_sec = dur_sec * ratio
 
-    logger.info(f"Approx TTS duration: {dur_sec:.3f}s")
+    dur_sec = dur_sec / speed  # speed >1.0 → shorter/faster, <1.0 → longer/slower
+    logger.info(f"Approx TTS duration: {dur_sec:.3f}s (speed={speed:.2f})")
     duration = int(dur_sec * sr // full_hop)
     duration = min(duration + prompt_dur, int(max_duration * sr // full_hop))
 
