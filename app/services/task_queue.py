@@ -20,6 +20,7 @@ from app.config import (
     VIDEO_AUDIO_ENCODE_MODE,
     VIDEO_DEFAULT_SEED,
     VIDEO_USE_FACE_CROP,
+    VIDEO_BACKEND,
 )
 from app.database import db
 from app.storage import (
@@ -29,7 +30,12 @@ from app.storage import (
     save_generated_video,
 )
 from app.services.tts_service import generate_speech, load_model as load_tts_model
-from app.services.video_service import generate_video, load_model as load_video_model
+
+# Dynamically import the correct video backend
+if VIDEO_BACKEND == "longcat":
+    from app.services.longcat_video_service import generate_video, load_model as load_video_model
+else:
+    from app.services.video_service import generate_video, load_model as load_video_model
 
 
 class TaskQueue:

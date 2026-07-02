@@ -36,6 +36,16 @@ AUDIODIT_MODEL_DIR = os.environ.get(
     str(BASE_DIR / "models" / "LongCat-AudioDiT-1B"),
 )
 
+# ===== LongCat-Video-Avatar-1.5 =====
+LONGCAVA_CKPT_DIR = os.environ.get(
+    "LONGCAVA_CKPT_DIR",
+    str(BASE_DIR / "models" / "LongCat-Video-Avatar-1.5"),
+)
+
+# ===== Backend selection =====
+# "flashhead" (default) or "longcat"
+VIDEO_BACKEND = os.environ.get("VIDEO_BACKEND", "flashhead")
+
 # ===== Server config =====
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "5000"))

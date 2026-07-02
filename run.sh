@@ -11,6 +11,7 @@ cd "$SCRIPT_DIR"
 echo "================================================"
 echo " 数字人视频生成服务 (Digital Human Video Gen)"
 echo " 整合: SoulX-FlashHead + LongCat-AudioDiT"
+echo " 视频后端: ${VIDEO_BACKEND:-flashhead}"
 echo "================================================"
 
 # --- Environment setup ---
@@ -35,7 +36,12 @@ export LLM_DEFAULT_MODEL="${LLM_DEFAULT_MODEL:-qwen-turbo}"
 echo ""
 echo " Configuration:"
 echo "   Host:               ${HOST}:${PORT}"
-echo "   FlashHead model:    ${FLASHHEAD_MODEL_TYPE} @ ${FLASHHEAD_CKPT_DIR}"
+echo "   Video Backend:      ${VIDEO_BACKEND:-flashhead}"
+if [ "${VIDEO_BACKEND:-flashhead}" = "longcat" ]; then
+    echo "   LongCat model:      ${LONGCAVA_CKPT_DIR:-${SCRIPT_DIR}/models/LongCat-Video-Avatar-1.5}"
+else
+    echo "   FlashHead model:    ${FLASHHEAD_MODEL_TYPE:-lite} @ ${FLASHHEAD_CKPT_DIR}"
+fi
 echo "   AudioDiT model:     ${AUDIODIT_MODEL_DIR}"
 echo "   LLM backend:        ${LLM_BASE_URL} / ${LLM_DEFAULT_MODEL}"
 echo ""

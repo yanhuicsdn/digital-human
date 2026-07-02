@@ -81,9 +81,24 @@ download_model "AI-ModelScope/wav2vec2-base-960h" "$WAV2VEC"
 AUDIODIT="${AUDIODIT_MODEL_DIR:-${SCRIPT_DIR}/models/LongCat-AudioDiT-1B}"
 download_model "meituan-longcat/LongCat-AudioDiT-1B" "$AUDIODIT"
 
+# LongCat-Video-Avatar-1.5 数字人视频模型（可选，仅 VIDEO_BACKEND=longcat 时需要）
+LONGCAVA="${LONGCAVA_CKPT_DIR:-${SCRIPT_DIR}/models/LongCat-Video-Avatar-1.5}"
+if [ ! -d "$LONGCAVA" ] || [ -z "$(ls -A "$LONGCAVA" 2>/dev/null)" ]; then
+    echo ""
+    echo "📦 [Optional] Downloading LongCat-Video-Avatar-1.5（数字人视频模型）..."
+    modelscope download --model meituan-longcat/LongCat-Video-Avatar-1.5 --local_dir "$LONGCAVA"
+    echo "   ✅ LongCat-Video-Avatar-1.5 downloaded"
+else
+    echo "   ✅ LongCat-Video-Avatar-1.5 already exists"
+fi
+
 echo ""
 echo "🎉 Setup complete! Start the server with:"
 echo "   bash run.sh"
 echo "   # or"
 echo "   python start.py"
+echo ""
+echo "To use LongCat backend, set:"
+echo "   export VIDEO_BACKEND=longcat"
+echo "   ./run.sh"
 echo ""
