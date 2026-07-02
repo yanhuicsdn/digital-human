@@ -314,38 +314,32 @@ def generate_video(
     H, W = first_frames.shape[2], first_frames.shape[3]
 
     try:
-        from app.config import (
-            VIDEO_CRF,
-            VIDEO_PRESET,
-        )
-
-        # Step A: Write all frames to a temporary raw video file on disk
-        #         then encode with ffmpeg (more reliable than pipe for large data)
-        raw_path = temp_video_path.replace("_tmp.mp4", "_raw.bin")
-        with open(raw_path, "wb") as f:
-            for frames in generated_list:
-                frames_np = frames.numpy().astype(np.uint8)  # (N, C, H, W)
-                f.write(frames_np.tobytes())
-
-        ffmpeg_cmd = [
-            "ffmpeg", "-y",
-            "-f", "rawvideo",
-            "-pix_fmt", "rgb24",
-            "-s", f"{W}x{H}",
-            "-r", str(tgt_fps),
-            "-i", raw_path,
-            "-c:v", "libx264",
-            "-preset", VIDEO_PRESET,
-            "-crf", str(VIDEO_CRF),
-            "-pix_fmt", "yuv420p",
-            "-bf", "0",
+        # Step A: Write video frames using imageio (reliable, proven working)
+        with imageio.get_writer(
             temp_video_path,
+            format="mp4",
+            mode="I",
+            fps=tgt_fps,
+            codec="h264",
+            ffmpeg_params=["-bf", "0"],
+        ) as writer:
+            for frames in generated_list:
+                frames_np = frames.numpy().astype(np.uint8)
+                for i in range(frames_np.shape[0]):
+                    writer.append_data(frames_np[i, :, :, :])
+
+        # Step B: Merge video + audio
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", temp_video_path,
+            "-i", audio_path,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-shortest",
+            output_video_path,
         ]
-        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"ffmpeg encode failed (code {result.returncode}): {result.stderr[:500]}"
-            )
+        subprocess.run(cmd, check=True, capture_output=True)
+        logger.info(f"Video saved to {output_video_path} ({W}x{H} @ {tgt_fps}fps)")
 
         # Step B: Merge audio into video
         merge_cmd = [
@@ -363,9 +357,8 @@ def generate_video(
     except Exception as e:
         raise RuntimeError(f"Failed to save video: {e}")
     finally:
-        for p in [temp_video_path, raw_path]:
-            if os.path.exists(p):
-                os.remove(p)
+        if os.path.exists(temp_video_path):
+            os.remove(temp_video_path)
 
     if progress_callback:
         progress_callback(1.0, "Done!")
