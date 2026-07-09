@@ -1,13 +1,13 @@
 """AudioDiT model configuration"""
 
-from transformers import PreTrainedConfig, logging
+from transformers import PretrainedConfig, logging
 from transformers.models.umt5.configuration_umt5 import UMT5Config
 
 
 logger = logging.get_logger(__name__)
 
 
-class AudioDiTVaeConfig(PreTrainedConfig):
+class AudioDiTVaeConfig(PretrainedConfig):
     r"""
     Configuration class for the AudioDiT WAV-VAE audio autoencoder.
 
@@ -83,7 +83,7 @@ class AudioDiTVaeConfig(PreTrainedConfig):
         self.scale = scale
 
 
-class AudioDiTConfig(PreTrainedConfig):
+class AudioDiTConfig(PretrainedConfig):
     r"""
     Configuration class for AudioDiT, a Conditional Flow Matching TTS model based on DiT architecture.
 

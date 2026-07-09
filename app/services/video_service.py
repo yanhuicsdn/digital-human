@@ -341,19 +341,6 @@ def generate_video(
                 for i in range(frames_np.shape[0]):
                     writer.append_data(frames_np[i, :, :, :])
 
-        # Step B: Merge video + audio
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", temp_video_path,
-            "-i", audio_path,
-            "-c:v", "copy",
-            "-c:a", "aac",
-            "-shortest",
-            output_video_path,
-        ]
-        subprocess.run(cmd, check=True, capture_output=True)
-        logger.info(f"Video saved to {output_video_path} ({W}x{H} @ {tgt_fps}fps)")
-
         # Step B: Merge audio into video
         merge_cmd = [
             "ffmpeg", "-y",

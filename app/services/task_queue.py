@@ -29,13 +29,13 @@ from app.storage import (
     save_generated_audio,
     save_generated_video,
 )
-from app.services.tts_service import generate_speech, load_model as load_tts_model
+from app.services.tts_service import generate_speech, load_model as load_tts_model, unload_model as unload_tts_model
 
 # Dynamically import the correct video backend
 if VIDEO_BACKEND == "longcat":
-    from app.services.longcat_video_service import generate_video, load_model as load_video_model
+    from app.services.longcat_video_service import generate_video, load_model as load_video_model, unload_model as unload_video_model
 else:
-    from app.services.video_service import generate_video, load_model as load_video_model
+    from app.services.video_service import generate_video, load_model as load_video_model, unload_model as unload_video_model
 
 
 class TaskQueue:
@@ -51,6 +51,17 @@ class TaskQueue:
         if self._worker_thread is not None and self._worker_thread.is_alive():
             logger.warning("Task queue worker already running")
             return
+
+        # Reset orphaned "processing" tasks back to "queued" so they
+        # get retried on restart (crashed / killed server).
+        try:
+            all_tasks = db.list_tasks()
+            for t in all_tasks:
+                if t["status"] == "processing":
+                    db.update_task(t["id"], status="queued", progress=0.0, error=None)
+                    logger.info(f"Reset orphaned processing task {t['id']}")
+        except Exception as e:
+            logger.warning(f"Failed to reset orphaned tasks: {e}")
 
         self._stop_event.clear()
         self._worker_thread = threading.Thread(target=self._worker_loop, daemon=True)
@@ -126,7 +137,10 @@ class TaskQueue:
         try:
             # --- Step 1: Generate speech via TTS ---
             db.update_task(task_id, progress=0.1, status="processing")
-            logger.info(f"[Task {task_id}] Step 1: Generating TTS audio...")
+            logger.info(f"[Task {task_id}] Step 1: Loading TTS model and generating audio...")
+
+            # Reload TTS model (may have been unloaded after previous task's video)
+            load_tts_model()
 
             avatar_audio_path = get_avatar_audio_path(avatar["audio_path"])
             avatar_image_path = get_avatar_image_path(avatar["image_path"])
@@ -153,9 +167,16 @@ class TaskQueue:
             db.update_task(task_id, progress=0.4, status="processing", audio_path=audio_rel_path)
             logger.info(f"[Task {task_id}] TTS audio saved: {audio_rel_path}")
 
+            # Unload TTS model to free GPU memory for video generation
+            unload_tts_model()
+            logger.info(f"[Task {task_id}] TTS model unloaded, proceeding to video generation...")
+
             # --- Step 2: Generate video via FlashHead ---
             db.update_task(task_id, progress=0.4, status="processing")
-            logger.info(f"[Task {task_id}] Step 2: Generating video...")
+            logger.info(f"[Task {task_id}] Step 2: Loading video model and generating video...")
+
+            # Reload video model (was unloaded after previous task)
+            load_video_model()
 
             with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
                 video_output_path = tmp.name
@@ -176,6 +197,10 @@ class TaskQueue:
             video_rel_path = save_generated_video(video_output_path)
             db.update_task(task_id, progress=1.0, status="completed", video_path=video_rel_path)
             logger.info(f"[Task {task_id}] Video saved: {video_rel_path}")
+
+            # Unload video model to free GPU memory for the next task's TTS
+            unload_video_model()
+            logger.info(f"[Task {task_id}] Video model unloaded")
 
             # Cleanup temp files
             try:

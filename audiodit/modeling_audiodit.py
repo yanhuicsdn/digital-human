@@ -10,7 +10,8 @@ from torch import nn
 from torch.nn.utils import weight_norm
 from torch.nn.utils.rnn import pad_sequence
 
-from transformers import PreTrainedModel, logging
+from transformers.modeling_utils import PreTrainedModel
+from transformers import logging
 from transformers.modeling_outputs import ModelOutput
 from .configuration_audiodit import AudioDiTConfig, AudioDiTVaeConfig
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from datetime import datetime
 from typing import Any, Optional
@@ -28,9 +29,13 @@ class JsonDatabase:
                 self._data = {"avatars": {}, "tasks": {}}
 
     def _save(self):
-        """Save data to disk (caller must hold lock)."""
-        with open(str(DB_PATH), "w") as f:
+        """Save data to disk atomically (caller must hold lock)."""
+        tmp = str(DB_PATH) + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(self._data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, str(DB_PATH))
 
     # ---- Avatars ----
 

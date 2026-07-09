@@ -24,7 +24,7 @@ export PORT="${PORT:-5000}"
 # Model paths (update these to match your setup)
 export FLASHHEAD_CKPT_DIR="${FLASHHEAD_CKPT_DIR:-${SCRIPT_DIR}/models/SoulX-FlashHead-1_3B}"
 export FLASHHEAD_WAV2VEC_DIR="${FLASHHEAD_WAV2VEC_DIR:-${SCRIPT_DIR}/models/wav2vec2-base-960h}"
-export FLASHHEAD_MODEL_TYPE="${FLASHHEAD_MODEL_TYPE:-lite}"
+export FLASHHEAD_MODEL_TYPE="${FLASHHEAD_MODEL_TYPE:-pro}"
 
 export AUDIODIT_MODEL_DIR="${AUDIODIT_MODEL_DIR:-${SCRIPT_DIR}/models/LongCat-AudioDiT-1B}"
 

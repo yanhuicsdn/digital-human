@@ -28,12 +28,18 @@ FLASHHEAD_WAV2VEC_DIR = os.environ.get(
     "FLASHHEAD_WAV2VEC_DIR",
     str(BASE_DIR / "models" / "wav2vec2-base-960h"),
 )
-FLASHHEAD_MODEL_TYPE = os.environ.get("FLASHHEAD_MODEL_TYPE", "lite")  # "pro" or "lite"
+FLASHHEAD_MODEL_TYPE = os.environ.get("FLASHHEAD_MODEL_TYPE", "pro")  # "pro" or "lite"
 
-# LongCat-AudioDiT
+# LongCat-AudioDiT (deprecated, replaced by VoxCPM)
 AUDIODIT_MODEL_DIR = os.environ.get(
     "AUDIODIT_MODEL_DIR",
     str(BASE_DIR / "models" / "LongCat-AudioDiT-1B"),
+)
+
+# VoxCPM2
+VOXCPM_MODEL_DIR = os.environ.get(
+    "VOXCPM_MODEL_DIR",
+    str(BASE_DIR / "models" / "VoxCPM2"),
 )
 
 # ===== LongCat-Video-Avatar-1.5 =====
@@ -51,10 +57,11 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "5000"))
 
 # ===== TTS config =====
-TTS_SAMPLE_RATE = 24000  # LongCat-AudioDiT output sample rate
+TTS_SAMPLE_RATE = 24000  # AudioDiT output sample rate
 TTS_DEFAULT_NFE = int(os.environ.get("TTS_NFE", "16"))  # 8=faster/lower quality, 16=balanced, 32=best quality
 TTS_GUIDANCE_STRENGTH = float(os.environ.get("TTS_GUIDANCE_STRENGTH", "4.0"))  # higher = more expressive
 TTS_GUIDANCE_METHOD = os.environ.get("TTS_GUIDANCE_METHOD", "apg")  # "cfg" or "apg" (APG is better)
+TTS_GUIDANCE_METHOD = os.environ.get("TTS_GUIDANCE_METHOD", "cfg")  # VoxCPM uses CFG only
 
 # ===== Video generation config =====
 VIDEO_AUDIO_ENCODE_MODE = os.environ.get("VIDEO_AUDIO_ENCODE_MODE", "once")  # "once" or "stream"
