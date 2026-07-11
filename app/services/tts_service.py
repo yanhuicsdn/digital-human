@@ -219,10 +219,11 @@ def _generate_one(
     text_norm = normalize_text_fn(text)
     no_prompt = prompt_audio_path is None or prompt_text is None
 
-    if not no_prompt:
-        full_text = f"{normalize_text_fn(prompt_text)} {text_norm}"
-    else:
-        full_text = text_norm
+    # Only pass the text to be generated — prompt_text is NOT concatenated.
+    # The AudioDiT model uses prompt_audio solely as a voice-conditioning signal;
+    # including prompt_text in the input causes the model to re-speak the prompt
+    # content, leading to repeated audio and incorrect duration estimation.
+    full_text = text_norm
 
     logger.debug(f"TTS chunk text: {full_text[:120]}...")
     inputs = tokenizer([full_text], padding="longest", return_tensors="pt")
